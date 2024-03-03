@@ -60,7 +60,7 @@ bool moved = LOW;
 int YZero, XZero = 0;     
 int YValue, XValue = 0;   
 uint8_t sens = 0;         
-uint8_t arSens[20] = {20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1};   
+uint8_t arSens[20] = {150,140,130,120,100,90,80,70,60,50,40,30,20,10,7,6,5,4,3,2};   
 
 uint16_t tim, h, tim1, h1, tim2, h2, tim3, h3;
 
@@ -156,7 +156,7 @@ void setLED(uint8_t *e)
     uint8_t item = 10;
     bool ex = LOW;
     uint8_t t = EEPROM.read(*e);
-    delay(300);
+    delay(200);
     do 
       {
       display.clearDisplay();
@@ -228,19 +228,13 @@ void setLED(uint8_t *e)
         }
       }
     while (ex==LOW);
-    delay(300);
+    delay(200);
     ex=LOW;
   }
 
 void neopixel (void)
   {
     pixels.clear();
-    /*
-      for(byte a=0; a<NUMPIXELS; a++)
-      {
-        pixels.setPixelColor(a, pixels.Color(0, 0, 0));//Off
-      }  
-    */
     switch(EEPROM.read(45))
       {
         case 0:
@@ -457,7 +451,7 @@ void buttMode(uint8_t *e)
           }
       }
     while (ex == LOW);
-    delay(300);
+    delay(200);
   }
 
 void selButt(uint8_t *e)
@@ -515,7 +509,7 @@ void joySens(void)
   bool ex = LOW;
   uint8_t t = EEPROM.read(0);
   uint8_t item = 19;
-  delay(300);
+  delay(200);
   do 
     {
       if(t == 1+item)
@@ -545,7 +539,7 @@ void joySens(void)
         }
     }
   while (ex==LOW);
-  delay(300);
+  delay(200);
   ex=LOW;
   }
 
@@ -557,7 +551,7 @@ uint8_t brightness(void)
   uint8_t t = EEPROM.read(50);
   uint8_t item = 10;
   uint8_t brt = 0;
-  delay(300);
+  delay(200);
   do 
     {
       if(t == 1+item)
@@ -589,7 +583,7 @@ uint8_t brightness(void)
         }
     }
   while (ex==LOW);
-  delay(300);
+  delay(200);
   ex=LOW;
   return brt;
   }
@@ -601,7 +595,7 @@ void joyMode(void)
     uint8_t t = EEPROM.read(10);
     bool ex = LOW;
     uint8_t item = 10;
-    delay(300);
+    delay(200);
     do 
       {
         display.clearDisplay();
@@ -685,7 +679,7 @@ void joyMode(void)
           }
       }
     while (ex == LOW);
-    delay(300);
+    delay(200);
   }
 
 void selModes(void)
