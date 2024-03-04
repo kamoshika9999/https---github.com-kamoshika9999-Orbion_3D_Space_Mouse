@@ -10,6 +10,7 @@ import threading
 import math
 import time
 import serial
+import serial.tools.list_ports
 import numpy
 
 def run(context):
@@ -18,10 +19,16 @@ def run(context):
     ui  = app.userInterface
     x_rotMatrix:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
     y_rotMatrix:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
+    shaft_rotMatrix:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
 
     try:
-        ser = serial.Serial("COM3", 9600, timeout=1)
-        print(ser.name)
+        ports = list(serial.tools.list_ports.comports())
+        for port in ports:
+            description=port.description
+            if 'Arduino' in description:
+                print("Arduino Leonardo = ",port.device)
+                ser = serial.Serial(port.device, 115200, timeout=1)
+                break
         print("開始")
         flg2 = True
         XValue:int = 0
@@ -53,6 +60,13 @@ def run(context):
                                 YValue = int(res.split('=')[1])
                                 Y_flg = True
                                 flg = False
+                        elif "JB" in res:
+                            ser.close()
+                            flg2 = False
+                            flg = False
+                            print("終了")
+                            ui.messageBox("シリアル通信切断")
+                            break
                     
                 adsk.doEvents()
 
@@ -66,23 +80,33 @@ def run(context):
             eye: adsk.core.Point3D = MyCamera.eye
             vec: adsk.core.Vector3D = MyCamera.upVector
             target:adsk.core.Point3D = MyCamera.target
+            shaft_vec: adsk.core.Vector3D = MyCamera.upVector
             #ループ用変数
             angle:int = 0
             #回転角度のステップ
-            x_angle_step:float =XValue;
-            y_angle_step:float =YValue;
+            x_angle_step:float =XValue/5;
+            y_angle_step:float =YValue/5;
 
             #回転行列設定 テストコードなのでY軸中心に回転
             x_rotMatrix.setToRotation( math.radians(x_angle_step),
-                            adsk.core.Vector3D.create(0,1,0),
+                            vec,
                             adsk.core.Point3D.create(0,0,0))
+            
+            
+            shaft_rotMatrix.setToRotation(math.radians(90),
+                            eye.vectorTo(MyCamera.target),
+                            adsk.core.Point3D.create(0,0,0))
+
+            
+            shaft_vec.transformBy(shaft_rotMatrix)
             y_rotMatrix.setToRotation( math.radians(y_angle_step),
-                            adsk.core.Vector3D.create(1,0,0),
+                            shaft_vec,                            
                             adsk.core.Point3D.create(0,0,0))
 
             eye.transformBy(x_rotMatrix)
             vec.transformBy(x_rotMatrix)
             target.transformBy(x_rotMatrix)
+
             eye.transformBy(y_rotMatrix)
             vec.transformBy(y_rotMatrix)
             target.transformBy(y_rotMatrix)
@@ -96,6 +120,7 @@ def run(context):
             vp.refresh()
             #Fusionのメッセージ処理　フリーズ防止
             adsk.doEvents()
+        
 
     except:
         if ui:
