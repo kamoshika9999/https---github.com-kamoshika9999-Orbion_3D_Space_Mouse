@@ -1,21 +1,21 @@
 #Author-KamoShikaCamper
 #Description-
 """
+Ver.0.2
+2024/03/06 22:14
 転載禁止
 商用利用不可
 """
 
 import adsk.core, adsk.fusion, adsk.cam, traceback
-import threading
 import math
-import time
 import serial
 import serial.tools.list_ports
-import numpy
 
 def run(context):
-    ui:adsk.core.UserInterface = None
     app:adsk.core.Application = adsk.core.Application.get()
+    ui:adsk.core.UserInterface = None
+ 
     ui  = app.userInterface
     x_rotMatrix:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
     y_rotMatrix:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
@@ -35,12 +35,18 @@ def run(context):
         YValue:int = 0
         SValue:int = 0
         while flg2:
+            des:adsk.fusion.Design = app.activeProduct
+            actComp = des.activeComponent
+            actTarget:adsk.core.Point3D = adsk.core.Point3D.create(
+                (actComp.boundingBox.maxPoint.x + actComp.boundingBox.minPoint.x)/2,
+                (actComp.boundingBox.maxPoint.y + actComp.boundingBox.minPoint.y)/2,
+                (actComp.boundingBox.maxPoint.z + actComp.boundingBox.minPoint.z)/2)
             flg:bool = True
             while flg:
                 S_flg = False
                 X_flg = False
                 Y_flg = False
-                #time.sleep(0.1)
+                SValue = 0
                 serStr = ser.read_all()
                 result =  serStr.decode().split("\r")
                 if len(result) > 1:
@@ -48,7 +54,6 @@ def run(context):
                     for res in result:
                         if "=" in res:
                             if 'S' in res and not(S_flg):
-                                print(res)
                                 SValue = int(res.split('=')[1])
                                 S_flg = True
                                 flg = False
@@ -81,6 +86,20 @@ def run(context):
             vec: adsk.core.Vector3D = MyCamera.upVector
             target:adsk.core.Point3D = MyCamera.target
             shaft_vec: adsk.core.Vector3D = MyCamera.upVector
+            #拡大縮小
+            extent = MyCamera.getExtents()
+            vWidth = extent[1]
+            vHight = extent[2]
+            #print("vWidth=",vWidth,"vHight=",vHight)
+            magnification = 1.2
+            if SValue == 1:
+                vWidth *= magnification
+                vHight *= magnification
+            elif SValue == 255:
+                vWidth /= magnification
+                vHight /= magnification
+            MyCamera.setExtents(vWidth,vHight)
+            #print("vWidth=",vWidth,"vHight=",vHight)
             #ループ用変数
             angle:int = 0
             #回転角度のステップ
@@ -90,7 +109,7 @@ def run(context):
             #回転行列設定 テストコードなのでY軸中心に回転
             x_rotMatrix.setToRotation( math.radians(x_angle_step),
                             vec,
-                            adsk.core.Point3D.create(0,0,0))
+                            actTarget)#adsk.core.Point3D.create(0,0,0))
             
             
             shaft_rotMatrix.setToRotation(math.radians(90),
@@ -101,7 +120,7 @@ def run(context):
             shaft_vec.transformBy(shaft_rotMatrix)
             y_rotMatrix.setToRotation( math.radians(y_angle_step),
                             shaft_vec,                            
-                            adsk.core.Point3D.create(0,0,0))
+                            actTarget)#adsk.core.Point3D.create(0,0,0))
 
             eye.transformBy(x_rotMatrix)
             vec.transformBy(x_rotMatrix)

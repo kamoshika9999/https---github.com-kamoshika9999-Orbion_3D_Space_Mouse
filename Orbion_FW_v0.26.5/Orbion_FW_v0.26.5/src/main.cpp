@@ -114,7 +114,7 @@ uint8_t scroll (void)
       {
         timeoff = LOW;
       }
-    if (timS > 10)
+    if (timS > 20)
       {
       hS = millis();
       if(rot == HIGH)
@@ -1005,7 +1005,7 @@ void loop()
         YValue = analogRead(vertPin) - YZero;  
         XValue = analogRead(horzPin) - XZero;
         h = millis();
-        const int deadZone = 5;
+        const int deadZone = 10;
         if ((YValue > deadZone)||(YValue < (-deadZone)))
           { 
             timeoff = LOW;
