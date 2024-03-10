@@ -1,41 +1,40 @@
-#Author-KamoShikaCamper
-#Description-
-"""
-Ver.0.2
-2024/03/06 22:14
-転載禁止
-商用利用不可
-"""
-
+# Assuming you have not changed the general structure of the template no modification is needed in this file.
+from . import commands
+from .lib import fusion360utils as futil
 import adsk.core, adsk.fusion, adsk.cam, traceback
 import math
+import os,sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '.'))
 import serial
 import serial.tools.list_ports
-
 def run(context):
-    app:adsk.core.Application = adsk.core.Application.get()
-    ui:adsk.core.UserInterface = None
- 
-    ui  = app.userInterface
-    x_rotMatrix:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
-    y_rotMatrix:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
-    shaft_rotMatrix:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
-
     try:
+        # This will run the start function in each of your commands as defined in commands/__init__.py
+        commands.start()
+        ui:adsk.core.UserInterface = None
+        app:adsk.core.Application = adsk.core.Application.get()
+        ui  = app.userInterface
+        
+        x_rotMatrix:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
+        y_rotMatrix:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
+        shaft_rotMatrix:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
+
+        
         ports = list(serial.tools.list_ports.comports())
         for port in ports:
             description=port.description
             if 'Arduino' in description:
                 print("Arduino Leonardo = ",port.device)
-                ser = serial.Serial(port.device, 115200, timeout=1)
+                ser = serial.Serial(port.device, 115200, timeout=10)
                 break
-        print("開始")
         flg2 = True
         XValue:int = 0
         YValue:int = 0
         SValue:int = 0
+        des:adsk.fusion.Design = app.activeProduct
+        print("ORBION動作開始")
         while flg2:
-            des:adsk.fusion.Design = app.activeProduct
+            des = app.activeProduct
             actComp = des.activeComponent
             actTarget:adsk.core.Point3D = adsk.core.Point3D.create(
                 (actComp.boundingBox.maxPoint.x + actComp.boundingBox.minPoint.x)/2,
@@ -106,10 +105,10 @@ def run(context):
             x_angle_step:float =XValue/5;
             y_angle_step:float =YValue/5;
 
-            #回転行列設定 テストコードなのでY軸中心に回転
+            #回転行列設定
             x_rotMatrix.setToRotation( math.radians(x_angle_step),
                             vec,
-                            actTarget)#adsk.core.Point3D.create(0,0,0))
+                            actTarget)
             
             
             shaft_rotMatrix.setToRotation(math.radians(90),
@@ -120,7 +119,7 @@ def run(context):
             shaft_vec.transformBy(shaft_rotMatrix)
             y_rotMatrix.setToRotation( math.radians(y_angle_step),
                             shaft_vec,                            
-                            actTarget)#adsk.core.Point3D.create(0,0,0))
+                            actTarget)
 
             eye.transformBy(x_rotMatrix)
             vec.transformBy(x_rotMatrix)
@@ -139,9 +138,18 @@ def run(context):
             vp.refresh()
             #Fusionのメッセージ処理　フリーズ防止
             adsk.doEvents()
-        
 
     except:
-        if ui:
-            ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
+        futil.handle_error('run')
 
+
+def stop(context):
+    try:
+        # Remove all of the event handlers your app has created
+        futil.clear_handlers()
+
+        # This will run the start function in each of your commands as defined in commands/__init__.py
+        commands.stop()
+
+    except:
+        futil.handle_error('stop')
